@@ -7,94 +7,123 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
         body {
-            margin: 0 auto;
-            max-width: 800px;
-            padding: 0 20px;
+            margin: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            height: 100vh; /* Set body height to 100% of the viewport height */
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .container {
-            border: 2px solid #dedede;
-            background-color: #f1f1f1;
-            border-radius: 5px;
-            padding: 10px;
-            margin: 10px 0;
+        .chat-container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
-        .darker {
-            border-color: #ccc;
-            background-color: #ddd;
+        .chat-header {
+            background-color: #4a90e2;
+            color: #fff;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 2px solid #205493;
         }
 
-        .container::after {
-            content: "";
+        #display {
+            max-height: 100%;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .message {
             clear: both;
-            display: table;
+            overflow: hidden;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 15px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
-        .container img {
-            float: left;
-            max-width: 60px;
-            width: 100%;
-            margin-right: 20px;
-            border-radius: 50%;
-        }
-
-        .container img.right {
+        .message.sent {
+            background: linear-gradient(to right, #4a90e2, #2a75c3);
+            color: #fff;
             float: right;
-            margin-left: 20px;
-            margin-right: 0;
         }
 
-        .time-right {
-            float: right;
-            color: #aaa;
-        }
-
-        .time-left {
+        .message.received {
+            background-color: #e1e8ed;
             float: left;
-            color: #999;
         }
 
-        /* Bootstrap styles for the form */
-        input[type=text], select {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            display: inline-block;
+        .message p {
+            margin: 5px 0;
+            font-size: 14px;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        .sender-name {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .chat-form {
+            padding: 15px;
+            background-color: #f0f2f5;
+            border-top: 2px solid #d3d9e2;
+        }
+
+        input[type=text] {
+            width: 75%;
+            padding: 10px;
+            margin-right: 10px;
             border: 1px solid #ccc;
-            border-radius: 4px;
+            border-radius: 5px;
             box-sizing: border-box;
+            font-size: 14px;
         }
 
         input[type=submit] {
-            width: 100%;
-            background-color: #007bff;
-            color: white;
-            padding: 14px;
-            margin: 8px 0;
+            width: 20%;
+            padding: 10px;
             border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        input[type=submit]:hover {
-            background-color: #0056b3;
-        }
-
-        .chat-form-container {
+            background-color: #4a90e2;
+            color: #fff;
             border-radius: 5px;
-            background-color: #f2f2f2;
-            padding: 20px;
-            margin-top: 20px;
+            cursor: pointer;
+            font-size: 14px;
         }
     </style>
     <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
 </head>
 <body>
 
-<h2>{{room}} - Chat</h2>
+<div class="chat-container">
+    <div class="chat-header">
+        {{room}} - Chat
+    </div>
 
-<div id="display"></div>
+    <div id="display"></div>
+
+    <div class="chat-form">
+        <form id="post-form">
+            {% csrf_token %}
+            <input type="hidden" name="username" id="username" value="{{username}}"/>
+            <input type="hidden" name="room_id" id="room_id" value="{{room_details.id}}"/>
+            <input type="text" name="message" id="message" placeholder="Type your message..." />
+            <input type="submit" value="Send">
+        </form>
+    </div>
+</div>
 
 <script>
     $(document).ready(function () {
@@ -106,27 +135,18 @@
                     console.log(response);
                     $("#display").empty();
                     for (var key in response.messages) {
-                        var temp = "<div class='container darker'><b>" + response.messages[key].user + "</b><p>" + response.messages[key].value + "</p><span class='time-left'>" + response.messages[key].date + "</span></div>";
+                        var messageClass = (response.messages[key].user === '{{username}}') ? 'sent' : 'received';
+                        var temp = "<div class='message " + messageClass + "'><div class='sender-name'>" + response.messages[key].user + "</div><p>" + response.messages[key].value + "</p></div>";
                         $("#display").append(temp);
                     }
                 },
                 error: function (response) {
-                    alert('server is closed')
+                    alert('Server is closed')
                 }
             });
         }, 1000);
-    })
+    });
 </script>
-
-<div class="container chat-form-container">
-    <form id="post-form">
-        {% csrf_token %}
-        <input type="hidden" name="username" id="username" value="{{username}}"/>
-        <input type="hidden" name="room_id" id="room_id" value="{{room_details.id}}"/>
-        <input type="text" name="message" id="message" placeholder="Type your message..." />
-        <input type="submit" value="Send">
-    </form>
-</div>
 
 <script type="text/javascript">
     $(document).on('submit', '#post-form', function (e) {
